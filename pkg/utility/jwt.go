@@ -5,24 +5,24 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/through-this-dunya/finalProject/model"
+	"github.com/through-this-dunya/finalProject/pkg/model"
 )
 
 type JwtWrapper struct {
-	SecretKey      string
-	Issuer 	       string
-	ExpirationHour int64
+	SecretKey       string
+	Issuer          string
+	ExpirationHours int64
 }
 
 type jwtClaims struct {
 	jwt.StandardClaims
-	Id    int64
+	ID    int64
 	Email string
 }
 
 func (w *JwtWrapper) GenerateToken(user model.User) (signedToken string, err error) {
 	claims := &jwtClaims{
-		Id:    user.Id,
+		ID:    user.Id,
 		Email: user.Email,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(w.ExpirationHours)).Unix(),
@@ -57,7 +57,7 @@ func (w *JwtWrapper) AuthenticateToken(signedToken string) (claims *jwtClaims, e
 	claims, ok := token.Claims.(*jwtClaims)
 
 	if !ok {
-		return nil, errors.New("Couldn't parse claims")
+		return nil, errors.New("couldn't parse claims")
 	}
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
@@ -65,5 +65,4 @@ func (w *JwtWrapper) AuthenticateToken(signedToken string) (claims *jwtClaims, e
 	}
 
 	return claims, nil
-
 }

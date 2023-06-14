@@ -4,9 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/through-this-dunya/finalProject.git/pkg/database"
-	"github.com/through-this-dunya/finalProject.git/pkg/model"
-	"github.com/through-this-dunya/finalProject.git/pkg/proto"
 	"github.com/through-this-dunya/finalProject/pkg/database"
 	"github.com/through-this-dunya/finalProject/pkg/model"
 	"github.com/through-this-dunya/finalProject/pkg/proto"
@@ -15,16 +12,16 @@ import (
 
 type Server struct {
 	Handler database.Handler
-	Jwt utility.JwtWrapper
+	Jwt     utility.JwtWrapper
 }
 
-func (s *Server) Register(ctx context.Context, req *proto.RegisterRequest) (*proto.RegisterResponse, error) {
+func (s *Server) Register(ctx context.Context, req *proto.ReqisterRequest) (*proto.RegisterResponse, error) {
 	var user model.User
 
 	if result := s.Handler.DB.Where(&model.User{Email: req.Email}).First(&user); result.Error == nil {
 		return &proto.RegisterResponse{
 			Status: http.StatusConflict,
-			Error: "Email already exists",
+			Error:  "Email already exists",
 		}, nil
 	}
 
@@ -44,22 +41,22 @@ func (s *Server) Login(ctx context.Context, req *proto.LoginRequest) (*proto.Log
 	if result := s.Handler.DB.Where(&model.User{Email: req.Email}).First(&user); result.Error == nil {
 		return &proto.LoginResponse{
 			Status: http.StatusNotFound,
-			Error: "User not found",
+			Error:  "User not found",
 		}, nil
 	}
-
-	if !match {
+	
+	if !utility.CheckPasswordHash(req.Password, user.Password) {
 		return &proto.LoginResponse{
-			Status: http.StatusNotFound,
-			Error: "User not found",
+			Status: http.StatusUnauthorized,
+			Error:  "Incorrect password",
 		}, nil
 	}
-
+	
 	token, _ := s.Jwt.GenerateToken(user)
-
+	
 	return &proto.LoginResponse{
 		Status: http.StatusOK,
-		Token: token,
+		Token:  token,
 	}, nil
 }
 
@@ -69,7 +66,7 @@ func (s *Server) Authenticate(ctx context.Context, req *proto.AuthenticateReques
 	if err != nil {
 		return &proto.AuthenticateResponse{
 			Status: http.StatusBadRequest,
-			Error: err.Error(),
+			Error:  err.Error(),
 		}, nil
 	}
 
@@ -78,7 +75,7 @@ func (s *Server) Authenticate(ctx context.Context, req *proto.AuthenticateReques
 	if result := s.Handler.DB.Where(&model.User{Email: claims.Email}).First(&user); result.Error != nil {
 		return &proto.AuthenticateResponse{
 			Status: http.StatusNotFound,
-			Error: "User not found",
+			Error:  "User not found",
 		}, nil
 	}
 
