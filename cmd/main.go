@@ -7,6 +7,7 @@ import (
 
 	"github.com/through-this-dunya/finalProject/pkg/config"
 	"github.com/through-this-dunya/finalProject/pkg/database"
+	"github.com/through-this-dunya/finalProject/pkg/proto"
 	"github.com/through-this-dunya/finalProject/pkg/service"
 	"github.com/through-this-dunya/finalProject/pkg/utility"
 	"google.golang.org/grpc"
@@ -19,7 +20,7 @@ func main() {
 		log.Fatalln("Failed at config", err)
 	}
 
-	h := database.Init(c.DBUrl)
+	dbHandler := database.Init(c.DBUrl)
 
 	jwt := utility.JwtWrapper{
 		SecretKey:       c.JWTSecretKey,
@@ -30,19 +31,19 @@ func main() {
 	lis, err := net.Listen("tcp", c.Port)
 
 	if err != nil {
-		log.Fatalln("Failed to listing:", err)
+		log.Fatalln("Failed to listen:", err)
 	}
 
 	fmt.Println("Auth Svc on", c.Port)
 
 	s := service.Server{
-		Handler: h,
+		Handler: dbHandler,
 		Jwt:     jwt,
 	}
 
 	grpcServer := grpc.NewServer()
 
-	database.Register(grpcServer, &s)
+	proto.RegisterRegistrationServiceServer(grpcServer, &s)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalln("Failed to serve:", err)
