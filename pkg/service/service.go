@@ -11,6 +11,7 @@ import (
 )
 
 type Server struct {
+	proto.RegistrationServiceServer
 	Handler database.Handler
 	Jwt     utility.JwtWrapper
 }
